@@ -60,4 +60,9 @@ public class DepartmentController {
         
         return dpDTO;
     }
+
+    public void test(int a)
+    {
+        return;
+    }
 } 
