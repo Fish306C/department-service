@@ -22,6 +22,28 @@ jobs:
         run: |
           .\mvnw.cmd clean package -DskipTests
 
+      - name: Start Docker Desktop
+        shell: powershell
+        run: |
+          $dockerDesktop = "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe"
+          if (Test-Path $dockerDesktop) {
+            Start-Process $dockerDesktop
+          }
+
+          for ($i = 1; $i -le 60; $i++) {
+            docker info
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Docker is ready."
+              exit 0
+            }
+
+            Write-Host "Waiting for Docker to start..."
+            Start-Sleep -Seconds 5
+          }
+
+          Write-Error "Docker is not running. Please start Docker Desktop and make sure it is using Linux containers."
+          exit 1
+
       - name: Build and tag Docker image
         run: |
           docker build -t department-service:v1 .
@@ -40,6 +62,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Check Docker
+        shell: powershell
+        run: |
+          docker info
 
       - name: Stop and Remove Existing Containers
         continue-on-error: true
