@@ -68,6 +68,32 @@ jobs:
         run: |
           docker info
 
+      - name: Validate deployment variables
+        shell: powershell
+        run: |
+          $missing = @()
+
+          if ([string]::IsNullOrWhiteSpace($env:DB_URL)) {
+            $missing += "DB_URL"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:DB_USERNAME)) {
+            $missing += "DB_USERNAME"
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:DB_PASSWORD)) {
+            $missing += "DB_PASSWORD"
+          }
+
+          if ($missing.Count -gt 0) {
+            Write-Error "Missing GitHub Actions secrets: $($missing -join ', ')"
+            exit 1
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:APP_PORT)) {
+            Write-Host "APP_PORT is not set. Docker Compose will use default port 8082."
+          }
+
       - name: Stop and Remove Existing Containers
         continue-on-error: true
         run: docker compose down
