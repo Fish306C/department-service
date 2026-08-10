@@ -14,7 +14,7 @@ jobs:
 
       - name: Build mvn
         run: |
-          mvn clean package -DskipTests
+          .\mvnw.cmd clean package -DskipTests
 
       - name: Build and tag Docker image
         run: |
