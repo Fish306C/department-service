@@ -29,11 +29,15 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
     runs-on: [self-hosted]
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Stop and Remove Existing Containers
-        run: docker compose down || true  # Ignore errors if no containers are running
+        continue-on-error: true
+        run: docker compose down
 
       - name: Run with Docker Compose
         run: docker compose up -d
