@@ -20,10 +20,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Build Maven
-        run: mvn clean package -DskipTests
+        run: .\mvnw.cmd clean package -DskipTests
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME:$IMAGE_TAG .
+        run: docker build -t "${env:IMAGE_NAME}:${env:IMAGE_TAG}" .
 
   deploy-dev:
     runs-on: [self-hosted]
@@ -42,7 +42,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Stop and Remove Existing Containers
-        run: docker compose down || true
+        run: |
+          docker compose down
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "No existing containers to stop."
+          }
+          exit 0
 
       - name: Run with Docker Compose
         run: docker compose up -d
@@ -64,21 +69,27 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Load image into Minikube
-        run: minikube image load $IMAGE_NAME:$IMAGE_TAG
+        run: minikube image load "${env:IMAGE_NAME}:${env:IMAGE_TAG}"
 
       - name: Create or update Kubernetes secret
         run: |
-          kubectl create secret generic department-service-secret \
-            --from-literal=APP_PORT="$APP_PORT" \
-            --from-literal=DB_URL="$DB_URL" \
-            --from-literal=DB_USERNAME="$DB_USERNAME" \
-            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
+          kubectl create secret generic department-service-secret `
+            --from-literal=APP_PORT="$env:APP_PORT" `
+            --from-literal=DB_URL="$env:DB_URL" `
+            --from-literal=DB_USERNAME="$env:DB_USERNAME" `
+            --from-literal=DB_PASSWORD="$env:DB_PASSWORD" `
             --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Render Kubernetes manifests
         run: |
-          envsubst < k8s/deployment.yaml > k8s/deployment-rendered.yaml
-          envsubst < k8s/service.yaml > k8s/service-rendered.yaml
+          $files = @("deployment", "service")
+          foreach ($file in $files) {
+            $content = Get-Content "k8s/$file.yaml" -Raw
+            $content = $content.Replace('${IMAGE_NAME}', $env:IMAGE_NAME)
+            $content = $content.Replace('${IMAGE_TAG}', $env:IMAGE_TAG)
+            $content = $content.Replace('${APP_PORT}', $env:APP_PORT)
+            Set-Content "k8s/$file-rendered.yaml" -Value $content -Encoding utf8
+          }
 
       - name: Deploy to Minikube
         run: |
