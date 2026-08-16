@@ -10,7 +10,6 @@ env:
   IMAGE_NAME: department-service
   IMAGE_TAG: ${{ github.sha }}
 
-
 jobs:
   build:
     runs-on: [self-hosted]
