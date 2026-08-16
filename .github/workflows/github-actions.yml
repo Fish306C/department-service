@@ -6,6 +6,7 @@ on:
       - dev
       - production
 
+
 env:
   IMAGE_NAME: department-service
   IMAGE_TAG: ${{ github.sha }}
@@ -105,3 +106,6 @@ jobs:
         run: |
           kubectl rollout restart deployment/department-service
           kubectl rollout status deployment/department-service
+          
+          
+          
